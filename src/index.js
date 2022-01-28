@@ -52,16 +52,22 @@ const DIRECTUS_API = axios.create({
         rejectUnauthorized: false
     })
 });
-
-const ES_CLIENT = new Client({
-        host: {
-            host: process.env.ELASTIC_HOST,
-            httpAuth: 'admin:admin',
-            port: process.env.ELASTIC_PORT
-        }
+const ES_CLIENT = new Client(
+    {
+        node: 'https://admin:admin@52.48.56.124:9200',
+        ssl: {
+            rejectUnauthorized: false,
+        },
     }
 )
 
+
+const ELASTIC_API = axios.create({
+    baseURL: 'https://admin:admin@52.48.56.124:9200',
+    httpsAgent: new https.Agent({
+        rejectUnauthorized: false
+    })
+});
 BAR.start(TOTAL, 0);
 
 
@@ -211,12 +217,19 @@ async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH
             }));
 
         const afterDB = new Date().getTime();
-
         const dataEs = data.map(x => ([{"index": {"_index": indexName}}, x])).flat()
 
-        await ES_CLIENT.bulk({body: dataEs}).catch(
-            e => throw e
+        await ES_CLIENT.bulk({body: dataEs}).catch(e => {
+                console.log(e);
+                throw e
+            }
         )
+        /*
+         await ELASTIC_API.post('_bulk', dataEsFake).catch(e => {
+         console.log(e.toJSON())
+         throw e;
+         })
+         */
         const after = new Date().getTime();
 
         log(pid, "RUN DB " + (afterDB - now) / 1000, "RUN ALL " + (after - now) / 1000, "START=" + nowFrom, "END=" + nowTo, "SIZE=" + data.length)
