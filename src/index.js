@@ -25,7 +25,7 @@ const https = require('https');
 const logPath = __dirname + "/../log.csv";
 const logCliPath = __dirname + "/../log_cli.log";
 writeFileSync(logPath, ['STATUS', 'FROM', 'TO'].join(";") + "\r\n");
-writeFileSync(logCliPath,"");
+writeFileSync(logCliPath, "");
 
 const myArgs = process.argv.slice(2);
 const FROM = parseInt(myArgs[0] + "")
@@ -53,8 +53,13 @@ const DIRECTUS_API = axios.create({
     })
 });
 
-const ES_CLIENT = new Client(
-    {node: getTargetBaseUrl(process.env.ELASTIC_HOST, process.env.ELASTIC_PORT)}
+const ES_CLIENT = new Client({
+        host: {
+            host: process.env.ELASTIC_HOST,
+            httpAuth: 'admin:admin',
+            port: process.env.ELASTIC_PORT
+        }
+    }
 )
 
 BAR.start(TOTAL, 0);
@@ -209,7 +214,9 @@ async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH
 
         const dataEs = data.map(x => ([{"index": {"_index": indexName}}, x])).flat()
 
-        await ES_CLIENT.bulk({body: dataEs})
+        await ES_CLIENT.bulk({body: dataEs}).catch(
+            e => throw e
+        )
         const after = new Date().getTime();
 
         log(pid, "RUN DB " + (afterDB - now) / 1000, "RUN ALL " + (after - now) / 1000, "START=" + nowFrom, "END=" + nowTo, "SIZE=" + data.length)

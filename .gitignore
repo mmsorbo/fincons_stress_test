@@ -1,3 +1,6 @@
 node_modules
 .env
 /node_modules/
+.idea
+log.csv
+log_cli.log
