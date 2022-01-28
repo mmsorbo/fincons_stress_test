@@ -54,7 +54,7 @@ const DIRECTUS_API = axios.create({
 });
 const ES_CLIENT = new Client(
     {
-        node: 'https://admin:admin@52.48.56.124:9200',
+        node: 'https://admin:admin@'+process.env.ELASTIC_HOST+':9200',
         ssl: {
             rejectUnauthorized: false,
         },
