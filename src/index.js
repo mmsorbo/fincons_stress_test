@@ -127,6 +127,7 @@ async function run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_
 
 async function run_step(from, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP) {
     const START_RUN_STEP = new Date().getTime();
+    console.log("RUN STEP", {from, CONCURRENCY_STEP, STEP_BY})
     await Promise.all(
         (Array.from(Array(CONCURRENCY_STEP).keys()).map(index =>
                 start(
@@ -168,6 +169,7 @@ function getTargetBaseUrl(host, port) {
 
 async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP) {
     //return new Promise(resolve=> setTimeout(resolve(),1000))
+    console.log("START", {step, from, to, REQUEST_LIMIT})
 
     const pid = [new Date().getTime(), ('00000000000' + from).slice(-6), ('00000000000' + to).slice(-6)].join("-");
 
@@ -350,6 +352,7 @@ function get(headers, pageSize, from = 0) {
                 }
             )
             .catch(e => {
+                console.log(e);
                 resolve({
                     status: 'KO',
                     data: [],
