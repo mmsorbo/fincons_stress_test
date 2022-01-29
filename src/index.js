@@ -14,7 +14,6 @@ require('dotenv').config()
 const cliProgress = require('cli-progress');
 const opt = cliProgress.Presets.shades_classic;
 opt.format = 'progress [{bar}] {percentage}% | ETA: {eta}s | DURATION: {duration}s | {value}/{total} '
-const BAR = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
 
 const axios = require('axios');
@@ -38,8 +37,8 @@ const CONCURRENCY_REQUEST_FOR_EACH_STEP = parseInt(process.env.CONCURRENCY_REQUE
 const FROM_TOTAL = parseInt(myArgs[0] + "")
 const TO_TOTAL = parseInt(myArgs[1] + "")
 
-const logPath = __dirname + "/../log" + FROM_TOTAL + "_" + TO_TOTAL + ".csv";
-const logCliPath = __dirname + "/../log_cli_" + FROM_TOTAL + "_" + TO_TOTAL + ".csv";
+const logPath = __dirname + "/../log/log" + FROM_TOTAL + "_" + TO_TOTAL + ".csv";
+const logCliPath = __dirname + "/../log/log_cli_" + FROM_TOTAL + "_" + TO_TOTAL + ".csv";
 writeFileSync(logPath, ['STATUS', 'FROM', 'TO'].join(";") + "\r\n");
 writeFileSync(logCliPath, "");
 
@@ -73,7 +72,6 @@ const ELASTIC_API = axios.create({
         rejectUnauthorized: false
     })
 });
-BAR.start(TOTAL, 0);
 
 
 //retryErrors().then();
@@ -120,7 +118,6 @@ function sleep(ms) {
 }
 
 async function run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP) {
-
     const stepCount = TOTAL / (STEP_BY);
     log(stepCount);
 
@@ -140,7 +137,7 @@ async function run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_
          }*/
     }
 
-    BAR.stop();
+
 }
 
 
@@ -185,6 +182,8 @@ function getTargetBaseUrl(host, port) {
 
 
 async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP) {
+    //await sleep(1000)
+    //return
     const pid = [new Date().getTime(), ('00000000000' + from).slice(-6), ('00000000000' + to).slice(-6)].join("-");
 
     let loopSize = REQUEST_LIMIT * CONCURRENCY_REQUEST_FOR_EACH_STEP;
@@ -250,7 +249,6 @@ async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH
 
         log(pid, "RUN DB " + (afterDB - now) / 1000, "RUN ALL " + (after - now) / 1000, "START=" + nowFrom, "END=" + nowTo, "SIZE=" + data.length)
 
-        BAR.increment(loopSize);
 
         if (data.length < REQUEST_LIMIT) {
             return;
