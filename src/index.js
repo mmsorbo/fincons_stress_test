@@ -54,7 +54,7 @@ const DIRECTUS_API = axios.create({
 });
 const ES_CLIENT = new Client(
     {
-        node: 'https://admin:admin@'+process.env.ELASTIC_HOST+':9200',
+        node: 'https://admin:admin@' + process.env.ELASTIC_HOST + ':9200',
         ssl: {
             rejectUnauthorized: false,
         },
@@ -75,7 +75,7 @@ BAR.start(TOTAL, 0);
 
 
 run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP).then(r => {
-    check("ALL")
+    //check("ALL")
     retryErrors().then();
 })
 
@@ -110,6 +110,9 @@ function check(lastPid) {
     log(lastPid + (data ? 'OK' : 'KO'));
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP) {
 
@@ -118,14 +121,20 @@ async function run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_
     for (let i = 0; i < stepCount; i = i + CONCURRENCY_STEP) {
         log("FROM", i, i + CONCURRENCY_STEP)
         await run_step(i, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP)
+        const docs = (i + CONCURRENCY_STEP) * STEP_BY;
+        if (docs % 1000000 === 0) {
+            log("SLEEP FOR 1 minute", new Date())
+            await sleep(1000 * 60)
+            log("END SLEEP FOR 1 minute", new Date())
+        }
     }
-
     BAR.stop();
 
 }
 
 
 async function run_step(from, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP) {
+
     const START_RUN_STEP = new Date().getTime();
     console.log("RUN STEP", {from, CONCURRENCY_STEP, STEP_BY})
     await Promise.all(
@@ -150,7 +159,7 @@ async function run_step(from, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRE
             new Date().getTime() - START_RUN_STEP, "(THIS STEP)",)
     });
 
-    check("0 - " + (from + CONCURRENCY_STEP) * STEP_BY);
+    //check("0 - " + (from + CONCURRENCY_STEP) * STEP_BY);
     return null
 }
 
@@ -209,9 +218,8 @@ async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH
 
                         if (x.status === "KO") {
                             log("ERROR ", "FROM", x.from, "TO", x.to)
+                            appendFile(logPath, [x.status, x.from, x.to].join(";") + "\r\n", () => {});
                         }
-                        appendFile(logPath, [x.status, x.from, x.to].join(";") + "\r\n", () => {
-                        });
 
                     })
 
