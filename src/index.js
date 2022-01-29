@@ -122,7 +122,7 @@ async function run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_
         log("FROM", i, i + CONCURRENCY_STEP)
         await run_step(i, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP)
         const docs = (i + CONCURRENCY_STEP) * STEP_BY;
-        if (docs % 1000000 === 0) {
+        if (docs % 100000 === 0) {
             log("SLEEP FOR 1 minute", new Date())
             await sleep(1000 * 60)
             log("END SLEEP FOR 1 minute", new Date())
