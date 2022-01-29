@@ -22,10 +22,7 @@ const {Client} = require('@elastic/elasticsearch')
 const {config} = require("dotenv");
 
 const https = require('https');
-const logPath = __dirname + "/../log.csv";
-const logCliPath = __dirname + "/../log_cli.log";
-writeFileSync(logPath, ['STATUS', 'FROM', 'TO'].join(";") + "\r\n");
-writeFileSync(logCliPath, "");
+
 
 const myArgs = process.argv.slice(2);
 
@@ -40,6 +37,12 @@ const CONCURRENCY_REQUEST_FOR_EACH_STEP = parseInt(process.env.CONCURRENCY_REQUE
 
 const FROM_TOTAL = parseInt(myArgs[0] + "")
 const TO_TOTAL = parseInt(myArgs[1] + "")
+
+const logPath = __dirname + "/../log" + FROM_TOTAL + "_" + TO_TOTAL + ".csv";
+const logCliPath = __dirname + "/../log_cli_" + FROM_TOTAL + "_" + TO_TOTAL + ".csv";
+writeFileSync(logPath, ['STATUS', 'FROM', 'TO'].join(";") + "\r\n");
+writeFileSync(logCliPath, "");
+
 
 if (Number.isNaN(FROM_TOTAL) || Number.isNaN(TO_TOTAL)) throw new Error("invalid from or to in env")
 if (FROM_TOTAL % STEP_BY !== 0) throw new Error("FROM MUST BE MULTIPLE OF 200")
@@ -78,7 +81,7 @@ BAR.start(TOTAL, 0);
 
 run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP).then(r => {
     //check("ALL")
-    //retryErrors().then();
+    retryErrors().then();
 })
 
 
@@ -87,7 +90,7 @@ async function retryErrors() {
         .split("\r\n")
         .map(x => x.split(";"))
         .filter(x => !isNaN(parseInt(x[1])))
-        .filter(x[0] === "KO")
+        .filter(x => x[0] === "KO")
         .map(x => ({FROM: parseInt(x[1]), TO: parseInt(x[2])}))
         .sort((a, b) => a.FROM - b.FROM)
 
@@ -130,11 +133,11 @@ async function run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_
             break;
         }
         /*
-        if (docs % 100000 === 0) {
-            log("SLEEP FOR 1 minute", new Date())
-            await sleep(1000 * 60)
-            log("END SLEEP FOR 1 minute", new Date())
-        }*/
+         if (docs % 100000 === 0) {
+         log("SLEEP FOR 1 minute", new Date())
+         await sleep(1000 * 60)
+         log("END SLEEP FOR 1 minute", new Date())
+         }*/
     }
 
     BAR.stop();
