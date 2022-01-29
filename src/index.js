@@ -28,12 +28,6 @@ writeFileSync(logPath, ['STATUS', 'FROM', 'TO'].join(";") + "\r\n");
 writeFileSync(logCliPath, "");
 
 const myArgs = process.argv.slice(2);
-const FROM = parseInt(myArgs[0] + "")
-const TO = parseInt(myArgs[1] + "")
-
-if (Number.isNaN(FROM) || Number.isNaN(TO)) throw new Error("invalid from or to in env")
-if (FROM % 200 !== 0) throw new Error("FROM MUST BE MULTIPLE OF 200")
-if (TO % 200 !== 0) throw new Error("TO MUST BE MULTIPLE OF 200")
 
 
 const TOTAL = parseInt(process.env.TOTAL);
@@ -42,6 +36,14 @@ const STEP_BY = parseInt(process.env.STEP_BY);
 
 const REQUEST_LIMIT = parseInt(process.env.REQUEST_LIMIT);
 const CONCURRENCY_REQUEST_FOR_EACH_STEP = parseInt(process.env.CONCURRENCY_REQUEST_FOR_EACH_STEP);
+
+
+const FROM_TOTAL = parseInt(myArgs[0] + "")
+const TO_TOTAL = parseInt(myArgs[1] + "")
+
+if (Number.isNaN(FROM_TOTAL) || Number.isNaN(TO_TOTAL)) throw new Error("invalid from or to in env")
+if (FROM_TOTAL % STEP_BY !== 0) throw new Error("FROM MUST BE MULTIPLE OF 200")
+if (TO_TOTAL % STEP_BY !== 0) throw new Error("TO MUST BE MULTIPLE OF 200")
 
 
 const START_ALL_P = new Date().getTime();
@@ -76,7 +78,7 @@ BAR.start(TOTAL, 0);
 
 run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP).then(r => {
     //check("ALL")
-    retryErrors().then();
+    //retryErrors().then();
 })
 
 
@@ -118,25 +120,29 @@ async function run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_
 
     const stepCount = TOTAL / (STEP_BY);
     log(stepCount);
-    for (let i = 0; i < stepCount; i = i + CONCURRENCY_STEP) {
+
+    const start = FROM_TOTAL / STEP_BY
+    for (let i = start; i < stepCount; i = i + CONCURRENCY_STEP) {
         log("FROM", i, i + CONCURRENCY_STEP)
         await run_step(i, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP)
         const docs = (i + CONCURRENCY_STEP) * STEP_BY;
+        if (docs >= TO_TOTAL) {
+            break;
+        }
+        /*
         if (docs % 100000 === 0) {
             log("SLEEP FOR 1 minute", new Date())
             await sleep(1000 * 60)
             log("END SLEEP FOR 1 minute", new Date())
-        }
+        }*/
     }
-    BAR.stop();
 
+    BAR.stop();
 }
 
 
 async function run_step(from, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP) {
-
     const START_RUN_STEP = new Date().getTime();
-    console.log("RUN STEP", {from, CONCURRENCY_STEP, STEP_BY})
     await Promise.all(
         (Array.from(Array(CONCURRENCY_STEP).keys()).map(index =>
                 start(
@@ -148,7 +154,6 @@ async function run_step(from, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRE
                 ))
         )
     ).then(x => {
-
         log(
             "END ",
             "FROM",
@@ -177,9 +182,6 @@ function getTargetBaseUrl(host, port) {
 
 
 async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP) {
-    //return new Promise(resolve=> setTimeout(resolve(),1000))
-    console.log("START", {step, from, to, REQUEST_LIMIT})
-
     const pid = [new Date().getTime(), ('00000000000' + from).slice(-6), ('00000000000' + to).slice(-6)].join("-");
 
     let loopSize = REQUEST_LIMIT * CONCURRENCY_REQUEST_FOR_EACH_STEP;
@@ -218,7 +220,8 @@ async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH
 
                         if (x.status === "KO") {
                             log("ERROR ", "FROM", x.from, "TO", x.to)
-                            appendFile(logPath, [x.status, x.from, x.to].join(";") + "\r\n", () => {});
+                            appendFile(logPath, [x.status, x.from, x.to].join(";") + "\r\n", () => {
+                            });
                         }
 
                     })
