@@ -120,7 +120,7 @@ function sleep(ms) {
 async function run(TOTAL, CONCURRENCY_STEP, STEP_BY, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH_STEP) {
     const stepCount = TOTAL / (STEP_BY);
     log(stepCount);
-
+    //log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
     const start = FROM_TOTAL / STEP_BY
     for (let i = start; i < stepCount; i = i + CONCURRENCY_STEP) {
         log("FROM", i, i + CONCURRENCY_STEP)
@@ -208,11 +208,14 @@ async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH
 
         const now = new Date().getTime();
         const pagePromise = []
+        //log(pid,"START CREATE POOL", new Date().getTime())
         for (let i = 0; i < loopSize / REQUEST_LIMIT; i++) {
             pagePromise.push(get(headers, REQUEST_LIMIT, index))
             index = index + REQUEST_LIMIT;
         }
+        //log(pid,"END CREATE POOL", new Date().getTime())
 
+        //log(pid,"START RUN POOL", new Date().getTime())
         const data = (await Promise.all(pagePromise)
             .then(r => {
                 const data = r.map(x => x.data).flat().map(mapInDoc);
@@ -230,6 +233,7 @@ async function start(step, from, to, REQUEST_LIMIT, CONCURRENCY_REQUEST_FOR_EACH
 
                 return data;
             }));
+       //log(pid,"END RUN POOL", new Date().getTime())
 
         const afterDB = new Date().getTime();
         const dataEs = data.map(x => ([{"index": {"_index": indexName}}, x])).flat()
@@ -348,12 +352,14 @@ function get(headers, pageSize, from = 0) {
     ];
     const limit = pageSize;
     const offset = from;
+    //const fromTimestamp = new Date().getTime();
     const url = '/items/' + collectionName + "?limit=" + limit + "&offset=" + from + "&fields=" + fields.join(',') + "&sort=id";
 
     return new Promise((resolve, reject) => {
         DIRECTUS_API.get(url, {headers})
             .then(r => {
-
+                    //const toTimestamp = new Date().getTime();
+                    //log(url, " IN ", toTimestamp - fromTimestamp);
                     resolve({
                         status: 'OK',
                         data: r.data.data,
